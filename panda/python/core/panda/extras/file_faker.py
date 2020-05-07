@@ -1,4 +1,5 @@
 from panda.extras.file_hook import FileHook
+from panda.ffi_importer import ffi
 import logging
 
 '''
@@ -246,6 +247,21 @@ class FileFaker(FileHook):
         fd = args[2+fd_pos]
         asid = self._panda.current_asid(cpu)
 
+        if fd == 0xffffffff:
+            self.logger.debug(f"Got -1 for fd in enter of {syscall_name}")
+            return
+
+        assert(fd < 0xffffffff), "FD overflow?"
+
+        # Looks like this file isn't hooked. Let's use OSI and confirm
+        if (fd, asid) not in self.hooked_fds:
+            # Let's use OSI to figure out the backing filename here
+            fname = self._get_fname(cpu, fd)
+            if fname in self.faked_files:
+                self.logger.warning("Entering {syscall_name} with fd {fd} backed by {fname} but we missed it earlier - adding it now")
+                hfd = HyperFD(fname, self.faked_files[fname]) # Create HFD
+                self.hooked_fds[(fd, asid)] =  hfd
+
         # If this file descriptor is already hooked, update currently_hooked
         # so we know to mutate it when it returns
         if (fd, asid) in self.hooked_fds:
@@ -294,7 +310,8 @@ class FileFaker(FileHook):
         elif syscall_name == "close":
             # We want the guest to close the real FD. Delete it from our map of hooked fds
             hfd.close()
-            del self.hooked_fds[(fd, asid)]
+            if (fd, asid) in self.hooked_fds:
+                del self.hooked_fds[(fd, asid)]
 
         elif syscall_name == "write":
             # read count bytes from buf, add to our hyper-fd
