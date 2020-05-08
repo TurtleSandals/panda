@@ -103,6 +103,7 @@ Arguments
 
 * `kconf_file`: string, defaults to "kernelinfo.conf". The location of the configuration file that gives the required offsets for different versions of Linux.
 * `kconf_group`: string, defaults to "debian-3.2.65-i686". The specific configuration desired from the kernelinfo file (multiple configurations can be stored in a single `kernelinfo.conf`).
+* `load_now`: bool, defaults to false. When set, OSI will be initialized immediately. Otherwise, we wait until the first syscall to ensure that the kernel is initialized. This can be used to prevents OSI from attempting (and failing) to parse kernel data structures during boot when they aren't yet set up.
 
 Dependencies
 ------------
