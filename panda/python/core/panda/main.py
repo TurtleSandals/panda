@@ -117,6 +117,7 @@ class Panda(libpanda_mixins, blocking_mixins, osi_mixins, hooking_mixins, callba
         # Configure monitor - Always enabled for now
         self.monitor_file = NamedTemporaryFile(prefix="pypanda_m").name
         self.monitor_socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        self.raw_monitor = raw_monitor
         if not self.raw_monitor:
             self.monitor_console = Expect(expectation=rb"(qemu)", quiet=True, consume_first=True)
             self.panda_args.extend(['-monitor', 'unix:{},server,nowait'.format(self.monitor_file)])
